@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Playfair+Display:wght@400;700;900&family=Lora:wght@400;600;700&family=Crimson+Text:wght@400;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{--bg:#0A0A0F;--panel:#14141C;--panel2:#1B1B26;--border:#26263A;--text:#F5F5F7;--muted:#8A8A99;--accent:#FF3366;--accent2:#7C4DFF;--ok:#19C37D;--highlight:#FFEB3B;--shadow:rgba(0,0,0,.5)}
 body.light{--bg:#F5F5F7;--panel:#FFFFFF;--panel2:#EFEFF3;--border:#DCDCE5;--text:#1A1A1F;--muted:#666673;--shadow:rgba(0,0,0,.15)}
@@ -54,6 +55,8 @@ input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-r
 .file-drop{border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:.15s;display:block}
 .file-drop:hover{border-color:var(--accent);color:var(--text)}
 .file-drop input{display:none}
+.file-drop.pdf-drop{border-color:#E85D5D}
+.file-drop.pdf-drop:hover{border-color:#FF3366;color:#FF8899}
 .images-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
 .img-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#000;border:1px solid var(--border)}
 .img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -85,6 +88,10 @@ input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-r
 .page-chapter p{font-family:var(--b,'Lora',serif);font-size:12px;line-height:1.65;margin:0 0 10px 0;text-align:var(--align,justify);color:#2A2A2A}
 .page-chapter .illus{margin:14px 0;text-align:center}
 .page-chapter .illus img{max-width:100%;max-height:180px;border-radius:4px;object-fit:cover}
+.page-chapter table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--b,'Lora',serif);font-size:11px;color:#2A2A2A}
+.page-chapter table th,.page-chapter table td{border:1px solid #BBB;padding:6px 8px;text-align:left;vertical-align:top}
+.page-chapter table th{background:var(--accent,#FF3366);color:#fff;font-weight:700}
+.page-chapter table tr:nth-child(even) td{background:#F5F5F0}
 .status{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;min-height:16px}
 .status.ok{color:var(--ok)}
 .status.warn{color:#F5A623}
@@ -106,6 +113,20 @@ body.light .info-box{color:#2A5090;background:#EEF4FF;border-color:#C8D8F0}
 .search-empty{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 .search-count{font-size:11px;color:var(--muted);margin-bottom:6px}
 .epub-info{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.4;text-align:center}
+.table-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.table-item{padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px}
+.table-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--accent)}
+.table-item-header button{background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;padding:2px 8px;border-radius:6px;font-size:11px;font-family:inherit}
+.table-item-header button:hover{color:var(--error);border-color:var(--error)}
+.table-grid{display:grid;gap:3px;overflow-x:auto}
+.table-grid input{padding:6px 8px;font-size:12px;border-radius:6px;background:var(--panel);border:1px solid var(--border);color:var(--text);min-width:60px;width:100%}
+.table-grid input.header-cell{font-weight:700;background:rgba(255,51,102,.1);border-color:var(--accent)}
+.table-toolbar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.table-toolbar button{font-size:11px;padding:6px 10px}
+#importProgress{font-size:11px;color:var(--muted);margin-top:6px;text-align:center}
+.import-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px;display:none}
+.import-bar.active{display:block}
+.import-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .2s}
 #printContainer{display:none}
 @media print{
   body>*:not(#printContainer){display:none!important}
@@ -192,8 +213,16 @@ body.light .info-box{color:#2A5090;background:#EEF4FF;border-color:#C8D8F0}
       <label>Titre du chapitre</label>
       <input type="text" id="chapterTitle" placeholder="Titre du chapitre" />
       <label>Texte</label>
-      <textarea id="chapterContent" placeholder="Écris ton texte ici..."></textarea>
-      <label>Images illustratives</label>
+      <textarea id="chapterContent" placeholder="Écris ton texte ici...
+
+Pour insérer un tableau, place ton curseur où tu veux et clique sur le bouton 📊 ci-dessous."></textarea>
+
+      <div class="table-toolbar">
+        <button class="btn" id="btnInsertTable" style="flex:1">📊 Insérer un tableau</button>
+      </div>
+      <div class="table-list" id="tableList"></div>
+
+      <label style="margin-top:12px">Images illustratives</label>
       <label class="file-drop" for="chapterImages">🖼️ Ajouter des images
         <input type="file" id="chapterImages" accept="image/*" multiple />
       </label>
@@ -206,10 +235,20 @@ body.light .info-box{color:#2A5090;background:#EEF4FF;border-color:#C8D8F0}
     <div class="panel">
       <h2>5 · Actions</h2>
       <button class="btn-primary" id="btnExportPDF">📕 Exporter en vrai PDF</button>
+
+      <label class="file-drop pdf-drop" for="pdfInput" style="margin-top:10px">📄 Importer un PDF (corriger un ebook existant)
+        <input type="file" id="pdfInput" accept=".pdf,application/pdf" />
+      </label>
+      <div class="import-bar" id="importBar">
+        <div class="import-bar-fill" id="importBarFill"></div>
+      </div>
+      <div class="epub-info" id="pdfInfo"></div>
+
       <label class="file-drop" for="epubInput" style="margin-top:8px">📥 Importer un EPUB
         <input type="file" id="epubInput" accept=".epub,application/epub+zip" />
       </label>
       <div class="epub-info" id="epubInfo"></div>
+
       <div class="row" style="margin-top:8px">
         <button class="btn btn-ok" id="btnSaveJSON">💾 Sauvegarder</button>
         <button class="btn" id="btnLoadJSON">📂 Charger</button>
@@ -307,7 +346,7 @@ const state = {
     lineHeight: 1.65
   },
   chapters: [
-    { id: Date.now(), title: 'Introduction', content: 'Bienvenue dans ce livre.', images: [], imagePosition: 'top' }
+    { id: Date.now(), title: 'Introduction', content: 'Bienvenue dans ce livre.', images: [], imagePosition: 'top', tables: {} }
   ],
   view: 'cover',
   currentChapter: 0
@@ -320,10 +359,7 @@ function createTrackedURL(blob) {
   return url;
 }
 function revokeTrackedURL(url) {
-  if (url && runtimeURLs.has(url)) {
-    URL.revokeObjectURL(url);
-    runtimeURLs.delete(url);
-  }
+  if (url && runtimeURLs.has(url)) { URL.revokeObjectURL(url); runtimeURLs.delete(url); }
 }
 function revokeAllTrackedURLs() {
   runtimeURLs.forEach(u => URL.revokeObjectURL(u));
@@ -390,7 +426,8 @@ function serializeState() {
       title: c.title,
       content: c.content,
       imagePosition: c.imagePosition,
-      images: (c.images || []).map(im => ({ id: im.id, blob: im.blob || null }))
+      images: (c.images || []).map(im => ({ id: im.id, blob: im.blob || null })),
+      tables: c.tables || {}
     })),
     view: state.view,
     currentChapter: state.currentChapter
@@ -406,9 +443,7 @@ function deserializeState(saved) {
   state.meta.coverColor2 = saved.meta?.coverColor2 ?? state.meta.coverColor2;
   state.meta.coverImageBlob = saved.meta?.coverImageBlob || null;
   if (state.meta.coverImageURL) { revokeTrackedURL(state.meta.coverImageURL); state.meta.coverImageURL = null; }
-  if (state.meta.coverImageBlob) {
-    state.meta.coverImageURL = createTrackedURL(state.meta.coverImageBlob);
-  }
+  if (state.meta.coverImageBlob) state.meta.coverImageURL = createTrackedURL(state.meta.coverImageBlob);
   Object.assign(state.design, saved.design || {});
   state.view = saved.view || 'cover';
   state.currentChapter = saved.currentChapter || 0;
@@ -417,21 +452,17 @@ function deserializeState(saved) {
     title: c.title || '',
     content: c.content || '',
     imagePosition: c.imagePosition || 'top',
+    tables: c.tables || {},
     images: (c.images || []).map(im => {
       const obj = { id: im.id || Date.now() + Math.random() };
-      if (im.blob) {
-        obj.blob = im.blob;
-        obj.url = createTrackedURL(im.blob);
-      }
+      if (im.blob) { obj.blob = im.blob; obj.url = createTrackedURL(im.blob); }
       return obj;
     }).filter(im => im.blob)
   }));
   if (!state.chapters.length) {
-    state.chapters = [{ id: Date.now(), title: 'Introduction', content: '', images: [], imagePosition: 'top' }];
+    state.chapters = [{ id: Date.now(), title: 'Introduction', content: '', images: [], imagePosition: 'top', tables: {} }];
   }
-  if (state.currentChapter >= state.chapters.length) {
-    state.currentChapter = Math.max(0, state.chapters.length - 1);
-  }
+  if (state.currentChapter >= state.chapters.length) state.currentChapter = Math.max(0, state.chapters.length - 1);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -450,8 +481,7 @@ function scheduleSave() {
 async function doSave() {
   const ind = $('saveIndicator');
   try {
-    const s = serializeState();
-    await idbSet('main', s);
+    await idbSet('main', serializeState());
     if (ind) ind.textContent = '💾 Sauvegardé';
     clearTimeout(saveIndicatorTimer);
     saveIndicatorTimer = setTimeout(() => { if (ind) ind.textContent = ''; }, 1500);
@@ -466,30 +496,6 @@ async function loadState() {
   try {
     const saved = await idbGet('main');
     if (saved) deserializeState(saved);
-    else {
-      try {
-        const legacy = localStorage.getItem('ebookforge_state');
-        if (legacy) {
-          const parsed = JSON.parse(legacy);
-          state.meta.title = parsed.meta?.title || state.meta.title;
-          state.meta.subtitle = parsed.meta?.subtitle || state.meta.subtitle;
-          state.meta.author = parsed.meta?.author || state.meta.author;
-          state.meta.coverColor1 = parsed.meta?.coverColor1 || state.meta.coverColor1;
-          state.meta.coverColor2 = parsed.meta?.coverColor2 || state.meta.coverColor2;
-          Object.assign(state.design, parsed.design || {});
-          state.chapters = (parsed.chapters || []).map(c => ({
-            id: c.id || Date.now(),
-            title: c.title || '',
-            content: c.content || '',
-            imagePosition: c.imagePosition || 'top',
-            images: []
-          })).filter(c => c.title || c.content);
-          if (!state.chapters.length) state.chapters = [{ id: Date.now(), title: 'Introduction', content: '', images: [], imagePosition: 'top' }];
-          await doSave();
-          localStorage.removeItem('ebookforge_state');
-        }
-      } catch (e) { console.warn('Migration échouée', e); }
-    }
   } catch (e) { console.error('Load failed', e); }
 }
 
@@ -511,19 +517,6 @@ async function updateStorageInfo() {
 function escapeHTML(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function formatText(text) {
-  if (!text) return '';
-  return text.split(/\n\n+/).map(p => {
-    p = p.trim();
-    if (!p) return '';
-    if (p.startsWith('## ')) return '<h3>' + escapeHTML(p.slice(3)) + '</h3>';
-    if (p.startsWith('# ')) return '<h2>' + escapeHTML(p.slice(2)) + '</h2>';
-    let h = escapeHTML(p);
-    h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    return '<p>' + h + '</p>';
-  }).join('');
-}
 function getFonts() {
   const map = {
     classic: { h: "'Playfair Display', serif", b: "'Lora', serif" },
@@ -538,7 +531,7 @@ function applyFont(root) {
   const f = getFonts();
   const r = root || document;
   r.querySelectorAll('.page-chapter h2, .page-chapter h3').forEach(el => { el.style.fontFamily = f.h; });
-  r.querySelectorAll('.page-chapter p').forEach(el => { el.style.fontFamily = f.b; });
+  r.querySelectorAll('.page-chapter p, .page-chapter table').forEach(el => { el.style.fontFamily = f.b; });
 }
 function hslToHex(h, s, l) {
   s /= 100; l /= 100;
@@ -580,6 +573,69 @@ function blobToDataURL(blob) {
     r.readAsDataURL(blob);
   });
 }
+function generateTableId() {
+  return 'tbl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER TABLE (HTML)
+// ══════════════════════════════════════════════════════════════════
+function renderTableHTML(table) {
+  if (!table || !table.rows || !table.rows.length) return '';
+  let html = '<table>';
+  const rows = table.rows;
+  const start = table.hasHeader ? 1 : 0;
+  if (table.hasHeader && rows.length) {
+    html += '<thead><tr>';
+    rows[0].forEach(cell => {
+      html += '<th>' + escapeHTML(cell || '') + '</th>';
+    });
+    html += '</tr></thead>';
+  }
+  html += '<tbody>';
+  for (let i = start; i < rows.length; i++) {
+    html += '<tr>';
+    rows[i].forEach(cell => {
+      html += '<td>' + escapeHTML(cell || '') + '</td>';
+    });
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FORMAT TEXT (with table marker support)
+// ══════════════════════════════════════════════════════════════════
+function formatTextPlain(text) {
+  if (!text) return '';
+  return text.split(/\n\n+/).map(p => {
+    p = p.trim();
+    if (!p) return '';
+    if (p.startsWith('## ')) return '<h3>' + escapeHTML(p.slice(3)) + '</h3>';
+    if (p.startsWith('# ')) return '<h2>' + escapeHTML(p.slice(2)) + '</h2>';
+    let h = escapeHTML(p);
+    h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    return '<p>' + h + '</p>';
+  }).join('');
+}
+
+function formatText(text, chapter) {
+  if (!text) return '';
+  const parts = text.split(/(\[TABLE:[a-zA-Z0-9_]+\])/g);
+  let html = '';
+  for (const part of parts) {
+    const m = part.match(/^\[TABLE:([a-zA-Z0-9_]+)\]$/);
+    if (m) {
+      const table = chapter && chapter.tables ? chapter.tables[m[1]] : null;
+      if (table) html += renderTableHTML(table);
+    } else {
+      html += formatTextPlain(part);
+    }
+  }
+  return html;
+}
 
 // ══════════════════════════════════════════════════════════════════
 // PREVIEW
@@ -611,7 +667,7 @@ function buildChapterHTML(idx) {
     return url ? '<div class="illus"><img src="' + url + '" alt="" loading="lazy"/></div>' : '';
   }).join('');
   const pos = ch.imagePosition || 'top';
-  return '<div class="page tpl-' + state.design.template + '" style="--accent:' + state.design.accent + '"><div class="page-inner"><div class="page-chapter"><h2>' + escapeHTML(ch.title || 'Sans titre') + '</h2>' + (pos === 'top' ? imgs : '') + '<div class="chapter-text">' + formatText(ch.content) + '</div>' + (pos === 'bottom' ? imgs : '') + '</div></div></div>';
+  return '<div class="page tpl-' + state.design.template + '" style="--accent:' + state.design.accent + '"><div class="page-inner"><div class="page-chapter"><h2>' + escapeHTML(ch.title || 'Sans titre') + '</h2>' + (pos === 'top' ? imgs : '') + '<div class="chapter-text">' + formatText(ch.content, ch) + '</div>' + (pos === 'bottom' ? imgs : '') + '</div></div></div>';
 }
 function buildCurrentPreview() {
   const preview = $('previewPage');
@@ -626,6 +682,9 @@ function buildCurrentPreview() {
     chapter.querySelectorAll('p').forEach(p => {
       p.style.fontSize = state.design.fontSize + 'px';
       p.style.lineHeight = state.design.lineHeight;
+    });
+    chapter.querySelectorAll('table').forEach(t => {
+      t.style.fontSize = Math.max(8, state.design.fontSize - 1) + 'px';
     });
     const pageInner = preview.querySelector('.page-inner');
     if (pageInner) {
@@ -721,6 +780,157 @@ function renderImagePosition() {
     el.appendChild(b);
   });
 }
+
+// ══════════════════════════════════════════════════════════════════
+// TABLES UI
+// ══════════════════════════════════════════════════════════════════
+function renderTablesList() {
+  const el = $('tableList');
+  const ch = state.chapters[state.currentChapter];
+  el.innerHTML = '';
+  if (!ch || !ch.tables || !Object.keys(ch.tables).length) return;
+
+  Object.values(ch.tables).forEach(table => {
+    const rows = table.rows.length;
+    const cols = table.rows[0]?.length || 0;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-item';
+
+    const header = document.createElement('div');
+    header.className = 'table-item-header';
+    header.innerHTML = '<span>📊 Tableau ' + rows + '×' + cols + '</span>';
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.gap = '4px';
+
+    const addRowBtn = document.createElement('button');
+    addRowBtn.textContent = '+ ligne';
+    addRowBtn.title = 'Ajouter une ligne';
+    addRowBtn.onclick = () => {
+      const newRow = Array(cols).fill('');
+      table.rows.push(newRow);
+      renderTablesList(); schedulePreviewUpdate(); scheduleSave();
+    };
+
+    const addColBtn = document.createElement('button');
+    addColBtn.textContent = '+ colonne';
+    addColBtn.title = 'Ajouter une colonne';
+    addColBtn.onclick = () => {
+      table.rows.forEach(r => r.push(''));
+      renderTablesList(); schedulePreviewUpdate(); scheduleSave();
+    };
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '🗑 supprimer';
+    delBtn.title = 'Supprimer le tableau';
+    delBtn.onclick = () => {
+      if (!confirm('Supprimer ce tableau ? Le marqueur sera aussi retiré du texte.')) return;
+      delete ch.tables[table.id];
+      // Remove marker from content
+      ch.content = ch.content.replace(new RegExp('\\[TABLE:' + table.id + '\\]', 'g'), '');
+      $('chapterContent').value = ch.content;
+      renderTablesList(); schedulePreviewUpdate(); scheduleSave();
+    };
+
+    actions.appendChild(addRowBtn);
+    actions.appendChild(addColBtn);
+    actions.appendChild(delBtn);
+    header.appendChild(actions);
+
+    wrapper.appendChild(header);
+
+    // Grid of inputs
+    const grid = document.createElement('div');
+    grid.className = 'table-grid';
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+    table.rows.forEach((row, ri) => {
+      row.forEach((cell, ci) => {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = cell || '';
+        inp.placeholder = (ri === 0 && table.hasHeader) ? 'En-tête ' + (ci + 1) : '';
+        if (ri === 0 && table.hasHeader) inp.classList.add('header-cell');
+        inp.oninput = () => {
+          table.rows[ri][ci] = inp.value;
+          schedulePreviewUpdate();
+          scheduleSave();
+        };
+        grid.appendChild(inp);
+      });
+    });
+
+    wrapper.appendChild(grid);
+
+    // Toggle header
+    const headerToggle = document.createElement('div');
+    headerToggle.style.marginTop = '8px';
+    headerToggle.style.display = 'flex';
+    headerToggle.style.alignItems = 'center';
+    headerToggle.style.gap = '6px';
+    headerToggle.style.fontSize = '11px';
+    headerToggle.style.color = 'var(--muted)';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = table.hasHeader;
+    cb.style.width = 'auto';
+    cb.style.margin = '0';
+    cb.onchange = () => {
+      table.hasHeader = cb.checked;
+      renderTablesList(); schedulePreviewUpdate(); scheduleSave();
+    };
+    const lbl = document.createElement('label');
+    lbl.style.margin = '0';
+    lbl.style.fontSize = '11px';
+    lbl.textContent = 'Première ligne comme en-tête';
+    headerToggle.appendChild(cb);
+    headerToggle.appendChild(lbl);
+    wrapper.appendChild(headerToggle);
+
+    el.appendChild(wrapper);
+  });
+}
+
+function insertTable() {
+  const ch = state.chapters[state.currentChapter];
+  if (!ch) return;
+  const rowsStr = prompt('Nombre de lignes (max 20) :', '3');
+  if (rowsStr === null) return;
+  const colsStr = prompt('Nombre de colonnes (max 8) :', '3');
+  if (colsStr === null) return;
+  const rows = Math.max(1, Math.min(20, parseInt(rowsStr) || 3));
+  const cols = Math.max(1, Math.min(8, parseInt(colsStr) || 3));
+
+  const id = generateTableId();
+  if (!ch.tables) ch.tables = {};
+  ch.tables[id] = {
+    id,
+    rows: Array(rows).fill(null).map(() => Array(cols).fill('')),
+    hasHeader: true
+  };
+
+  // Insert marker in content at cursor
+  const ta = $('chapterContent');
+  const pos = (ta.selectionStart != null ? ta.selectionStart : ch.content.length);
+  const before = ch.content.slice(0, pos);
+  const after = ch.content.slice(pos);
+  const prefix = before.endsWith('\n') || !before ? '' : '\n\n';
+  const suffix = after.startsWith('\n') || !after ? '' : '\n\n';
+  const marker = prefix + '[TABLE:' + id + ']\n\n';
+  ch.content = before + marker + after;
+  ta.value = ch.content;
+  // Position cursor after marker
+  const newPos = before.length + marker.length;
+  ta.focus();
+  try { ta.setSelectionRange(newPos, newPos); } catch (e) {}
+
+  renderTablesList(); schedulePreviewUpdate(); scheduleSave();
+  setStatus('📊 Tableau ajouté', 'ok');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TEXT UTILS
+// ══════════════════════════════════════════════════════════════════
 function updateWordCount() {
   const ch = state.chapters[state.currentChapter];
   if (!ch) return;
@@ -732,7 +942,10 @@ function loadChapterIntoEditor() {
   if (!ch) return;
   $('chapterTitle').value = ch.title || '';
   $('chapterContent').value = ch.content || '';
-  renderChapterImages(); renderImagePosition(); updateWordCount();
+  renderChapterImages();
+  renderImagePosition();
+  renderTablesList();
+  updateWordCount();
 }
 function loadMetaIntoUI() {
   $('metaTitle').value = state.meta.title || '';
@@ -815,11 +1028,12 @@ $('chapterImages').addEventListener('change', async e => {
   e.target.value = '';
 });
 $('btnAddChapter').onclick = () => {
-  state.chapters.push({ id: Date.now(), title: 'Nouveau chapitre', content: '', images: [], imagePosition: 'top' });
+  state.chapters.push({ id: Date.now(), title: 'Nouveau chapitre', content: '', images: [], imagePosition: 'top', tables: {} });
   state.currentChapter = state.chapters.length - 1;
   state.view = 'chapter';
   renderChapters(); loadChapterIntoEditor(); schedulePreviewUpdate(); scheduleSave();
 };
+$('btnInsertTable').onclick = insertTable;
 document.querySelectorAll('[data-view]').forEach(b => {
   b.onclick = () => { state.view = b.dataset.view; schedulePreviewUpdate(); };
 });
@@ -907,7 +1121,6 @@ function performSearch(query) {
     };
   });
 }
-
 let searchTimer = null;
 searchInput.addEventListener('input', e => {
   clearTimeout(searchTimer);
@@ -919,7 +1132,173 @@ searchClear.onclick = () => {
 };
 
 // ══════════════════════════════════════════════════════════════════
-// EXPORT PDF
+// IMPORT PDF
+// ══════════════════════════════════════════════════════════════════
+async function importPDFFile(file) {
+  if (!window.pdfjsLib) {
+    alert('La librairie PDF n\'est pas chargée. Vérifie ta connexion internet et recharge la page.');
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  setStatus('📄 Lecture du PDF…', 'ok');
+  $('pdfInfo').textContent = 'Analyse…';
+  $('importBar').classList.add('active');
+  $('importBarFill').style.width = '0%';
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const numPages = pdf.numPages;
+    $('pdfInfo').textContent = numPages + ' page' + (numPages > 1 ? 's' : '') + ' détectée' + (numPages > 1 ? 's' : '') + '…';
+
+    const chapters = [];
+
+    for (let p = 1; p <= numPages; p++) {
+      $('importBarFill').style.width = Math.round((p / numPages) * 100) + '%';
+      $('pdfInfo').textContent = 'Extraction page ' + p + '/' + numPages + '…';
+      setStatus('📄 Extraction page ' + p + '/' + numPages + '…', '');
+
+      const page = await pdf.getPage(p);
+      const textContent = await page.getTextContent();
+
+      // Group items into lines based on Y position
+      const lines = [];
+      let currentLine = { text: '', y: null, maxFontSize: 0 };
+      const items = textContent.items;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item.str) continue;
+        const y = Math.round(item.transform[5]);
+        const fontSize = Math.abs(item.transform[3]) || 12;
+
+        if (currentLine.y === null) {
+          currentLine.y = y;
+          currentLine.text = item.str;
+          currentLine.maxFontSize = fontSize;
+        } else if (Math.abs(y - currentLine.y) <= 3) {
+          // Same line — append with proper spacing
+          const needsSpace = currentLine.text && !currentLine.text.endsWith(' ') && !item.str.startsWith(' ');
+          currentLine.text += (needsSpace ? ' ' : '') + item.str;
+          currentLine.maxFontSize = Math.max(currentLine.maxFontSize, fontSize);
+        } else {
+          // New line
+          if (currentLine.text.trim()) lines.push({ text: currentLine.text.trim(), fontSize: currentLine.maxFontSize });
+          currentLine = { text: item.str, y, maxFontSize: fontSize };
+        }
+      }
+      if (currentLine.text.trim()) lines.push({ text: currentLine.text.trim(), fontSize: currentLine.maxFontSize });
+
+      if (!lines.length) continue;
+
+      // Compute median font size for this page
+      const sizes = lines.map(l => l.fontSize).sort((a, b) => a - b);
+      const medianSize = sizes[Math.floor(sizes.length / 2)] || 12;
+
+      // Group lines into paragraphs
+      const paragraphs = [];
+      let currentPara = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const isHeading = line.fontSize > medianSize * 1.4;
+        if (isHeading && currentPara.length) {
+          paragraphs.push({ text: currentPara.join(' '), isHeading: false });
+          currentPara = [];
+        }
+        if (isHeading) {
+          paragraphs.push({ text: line.text, isHeading: true, fontSize: line.fontSize });
+        } else {
+          currentPara.push(line.text);
+        }
+      }
+      if (currentPara.length) paragraphs.push({ text: currentPara.join(' '), isHeading: false });
+
+      // Rebuild content with headings and paragraphs
+      const contentParts = [];
+      paragraphs.forEach(par => {
+        if (par.isHeading) contentParts.push('## ' + par.text);
+        else if (par.text.trim()) contentParts.push(par.text.trim());
+      });
+
+      // Title: first heading or first line
+      let title = '';
+      const firstHeading = paragraphs.find(p => p.isHeading);
+      if (firstHeading) title = firstHeading.text;
+      else title = lines[0].text.substring(0, 80);
+
+      // Remove first heading from content if it became the title
+      let content = contentParts.join('\n\n');
+      if (firstHeading && content.startsWith('## ' + firstHeading.text)) {
+        content = content.substring(('## ' + firstHeading.text).length).trim();
+      }
+
+      if (content.trim().length > 5 || title.trim().length > 3) {
+        chapters.push({
+          title: title || ('Page ' + p),
+          content: content,
+          images: []
+        });
+      }
+    }
+
+    if (!chapters.length) throw new Error('Aucun texte détecté dans ce PDF');
+
+    const confirmMsg = '📄 PDF analysé :\n\n' +
+      '📖 Fichier : ' + file.name + '\n' +
+      '📚 ' + chapters.length + ' chapitre' + (chapters.length > 1 ? 's' : '') + ' détecté' + (chapters.length > 1 ? 's' : '') + '\n\n' +
+      '⚠️ Le texte extrait peut contenir des erreurs (coupures de lignes, espaces). Tu pourras corriger dans l\'éditeur.\n\n' +
+      'Remplacer ton livre actuel par ce contenu ?';
+    if (!confirm(confirmMsg)) {
+      setStatus('Import annulé', '');
+      $('pdfInfo').textContent = '';
+      $('importBar').classList.remove('active');
+      return;
+    }
+
+    // Revoke old URLs
+    if (state.meta.coverImageURL) revokeTrackedURL(state.meta.coverImageURL);
+    state.meta.coverImageBlob = null;
+    state.meta.coverImageURL = null;
+    state.chapters.forEach(c => (c.images || []).forEach(im => { if (im.blob && im.url) revokeTrackedURL(im.url); }));
+
+    // Set new state
+    state.meta.title = file.name.replace(/\.pdf$/i, '') || 'Ebook importé';
+    state.meta.subtitle = '';
+    state.meta.author = '';
+    state.chapters = chapters.map(ch => ({
+      id: Date.now() + Math.random(),
+      title: ch.title,
+      content: ch.content,
+      imagePosition: 'top',
+      images: [],
+      tables: {}
+    }));
+    state.currentChapter = 0;
+    state.view = 'cover';
+
+    loadMetaIntoUI(); renderTemplates(); renderChapters(); loadChapterIntoEditor();
+    schedulePreviewUpdate();
+    await doSave();
+
+    $('pdfInfo').textContent = '✅ ' + chapters.length + ' chapitre' + (chapters.length > 1 ? 's' : '') + ' importé' + (chapters.length > 1 ? 's' : '');
+    setStatus('✅ PDF importé', 'ok');
+    setTimeout(() => { $('importBar').classList.remove('active'); }, 1500);
+  } catch (e) {
+    console.error('PDF import error', e);
+    $('pdfInfo').textContent = '❌ ' + e.message;
+    setStatus('⚠️ Erreur import PDF', 'warn');
+    setTimeout(() => { $('importBar').classList.remove('active'); }, 2000);
+  }
+}
+$('pdfInput').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (f) importPDFFile(f);
+  e.target.value = '';
+});
+
+// ══════════════════════════════════════════════════════════════════
+// EXPORT PDF (avec tables)
 // ══════════════════════════════════════════════════════════════════
 async function exportRealPDF() {
   if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -942,7 +1321,6 @@ async function exportRealPDF() {
   const bodyFont = isSerif ? 'times' : 'helvetica';
 
   // COVER
-  let coverBgRgb = hexToRgb(state.meta.coverColor1);
   if (state.meta.coverImageBlob) {
     try {
       const dataUrl = await blobToDataURL(state.meta.coverImageBlob);
@@ -956,19 +1334,17 @@ async function exportRealPDF() {
         doc.setFillColor(0, 0, 0);
         doc.rect(0, 0, PW, PH, 'F');
         const ratio = Math.max(PW / dims.w, PH / dims.h);
-        const iw = dims.w * ratio;
-        const ih = dims.h * ratio;
-        const ix = (PW - iw) / 2;
-        const iy = (PH - ih) / 2;
-        doc.addImage(dataUrl, 'JPEG', ix, iy, iw, ih, undefined, 'FAST');
-        doc.setFillColor(0, 0, 0);
+        const iw = dims.w * ratio, ih = dims.h * ratio;
+        doc.addImage(dataUrl, 'JPEG', (PW - iw) / 2, (PH - ih) / 2, iw, ih, undefined, 'FAST');
         doc.setGState(new doc.GState({ opacity: 0.35 }));
+        doc.setFillColor(0, 0, 0);
         doc.rect(0, 0, PW, PH, 'F');
         doc.setGState(new doc.GState({ opacity: 1 }));
       }
     } catch (e) { console.warn('Cover image failed', e); }
   } else {
-    doc.setFillColor(coverBgRgb.r, coverBgRgb.g, coverBgRgb.b);
+    const c = hexToRgb(state.meta.coverColor1);
+    doc.setFillColor(c.r, c.g, c.b);
     doc.rect(0, 0, PW, PH, 'F');
   }
 
@@ -977,10 +1353,7 @@ async function exportRealPDF() {
   doc.setFontSize(34);
   const titleLines = doc.splitTextToSize(state.meta.title || 'Sans titre', PW - 40);
   let ty = PH / 2 - titleLines.length * 7 + 10;
-  titleLines.forEach(line => {
-    doc.text(line, PW / 2, ty, { align: 'center' });
-    ty += 15;
-  });
+  titleLines.forEach(line => { doc.text(line, PW / 2, ty, { align: 'center' }); ty += 15; });
   if (state.meta.subtitle) {
     doc.setFont(bodyFont, 'italic');
     doc.setFontSize(14);
@@ -1015,11 +1388,13 @@ async function exportRealPDF() {
 
   // CHAPTERS
   const bodySize = state.design.fontSize;
+
   for (let idx = 0; idx < state.chapters.length; idx++) {
     const ch = state.chapters[idx];
     doc.addPage();
     cy = margin + 5;
 
+    // Title
     doc.setFont(titleFont, 'bold');
     doc.setFontSize(22);
     doc.setTextColor(15, 15, 15);
@@ -1031,6 +1406,7 @@ async function exportRealPDF() {
     });
     cy += 6;
 
+    // Images (top)
     const imgs = ch.images || [];
     if ((ch.imagePosition || 'top') === 'top' && imgs.length) {
       for (const im of imgs) {
@@ -1046,40 +1422,53 @@ async function exportRealPDF() {
           const maxW = contentW, maxH = 70;
           const ratio = Math.min(maxW / dims.w, maxH / dims.h);
           const iw = dims.w * ratio, ih = dims.h * ratio;
-          const ix = margin + (contentW - iw) / 2;
           if (cy + ih + 4 > bottomLimit) { doc.addPage(); cy = margin + 5; }
-          doc.addImage(dataUrl, 'JPEG', ix, cy, iw, ih, undefined, 'FAST');
+          doc.addImage(dataUrl, 'JPEG', margin + (contentW - iw) / 2, cy, iw, ih, undefined, 'FAST');
           cy += ih + 6;
         } catch (e) { console.warn('img err', e); }
       }
     }
 
-    doc.setFont(bodyFont, 'normal');
-    doc.setFontSize(bodySize);
-    doc.setTextColor(40, 40, 40);
+    // Content — split by table markers
+    const contentParts = (ch.content || '').split(/(\[TABLE:[a-zA-Z0-9_]+\])/g);
 
-    const paragraphs = (ch.content || '').split(/\n\n+/);
-    for (let pi = 0; pi < paragraphs.length; pi++) {
-      let para = paragraphs[pi].trim();
-      if (!para) continue;
-      let paraFont = bodyFont;
-      let paraStyle = 'normal';
-      let paraSize = bodySize;
-      if (para.startsWith('## ')) { para = para.slice(3); paraFont = titleFont; paraStyle = 'bold'; paraSize = bodySize + 2; }
-      else if (para.startsWith('# ')) { para = para.slice(2); paraFont = titleFont; paraStyle = 'bold'; paraSize = bodySize + 4; }
-      para = para.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
-      doc.setFont(paraFont, paraStyle);
-      doc.setFontSize(paraSize);
-      const lines = doc.splitTextToSize(para, contentW);
-      const lh = paraSize * state.design.lineHeight * 0.3528;
-      for (const line of lines) {
-        if (cy + lh > bottomLimit) { doc.addPage(); cy = margin + 5; }
-        doc.text(line, margin, cy);
-        cy += lh;
+    for (const part of contentParts) {
+      const m = part.match(/^\[TABLE:([a-zA-Z0-9_]+)\]$/);
+      if (m) {
+        // Draw table
+        const table = ch.tables ? ch.tables[m[1]] : null;
+        if (table) {
+          cy = await drawTablePDF(doc, table, margin, cy, contentW, bottomLimit, bodyFont, state.design.accent);
+        }
+        continue;
       }
-      cy += 3;
+
+      // Normal paragraphs
+      const paragraphs = part.split(/\n\n+/);
+      for (let pi = 0; pi < paragraphs.length; pi++) {
+        let para = paragraphs[pi].trim();
+        if (!para) continue;
+        let paraFont = bodyFont;
+        let paraStyle = 'normal';
+        let paraSize = bodySize;
+        if (para.startsWith('## ')) { para = para.slice(3); paraFont = titleFont; paraStyle = 'bold'; paraSize = bodySize + 2; }
+        else if (para.startsWith('# ')) { para = para.slice(2); paraFont = titleFont; paraStyle = 'bold'; paraSize = bodySize + 4; }
+        para = para.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
+        doc.setFont(paraFont, paraStyle);
+        doc.setFontSize(paraSize);
+        doc.setTextColor(40, 40, 40);
+        const lines = doc.splitTextToSize(para, contentW);
+        const lh = paraSize * state.design.lineHeight * 0.3528;
+        for (const line of lines) {
+          if (cy + lh > bottomLimit) { doc.addPage(); cy = margin + 5; }
+          doc.text(line, margin, cy);
+          cy += lh;
+        }
+        cy += 3;
+      }
     }
 
+    // Images (bottom)
     if ((ch.imagePosition || 'top') === 'bottom' && imgs.length) {
       cy += 3;
       for (const im of imgs) {
@@ -1095,15 +1484,15 @@ async function exportRealPDF() {
           const maxW = contentW, maxH = 70;
           const ratio = Math.min(maxW / dims.w, maxH / dims.h);
           const iw = dims.w * ratio, ih = dims.h * ratio;
-          const ix = margin + (contentW - iw) / 2;
           if (cy + ih + 4 > bottomLimit) { doc.addPage(); cy = margin + 5; }
-          doc.addImage(dataUrl, 'JPEG', ix, cy, iw, ih, undefined, 'FAST');
+          doc.addImage(dataUrl, 'JPEG', margin + (contentW - iw) / 2, cy, iw, ih, undefined, 'FAST');
           cy += ih + 6;
         } catch (e) { console.warn('img err', e); }
       }
     }
   }
 
+  // Page numbers
   const totalPages = doc.getNumberOfPages();
   for (let p = 2; p <= totalPages; p++) {
     doc.setPage(p);
@@ -1117,6 +1506,73 @@ async function exportRealPDF() {
   doc.save(fileName);
   setStatus('✅ PDF généré et téléchargé', 'ok');
 }
+
+async function drawTablePDF(doc, table, x, y, maxWidth, bottomLimit, font, accentHex) {
+  const rows = table.rows;
+  if (!rows.length) return y;
+  const cols = rows[0].length;
+  const colWidth = maxWidth / cols;
+  const padding = 2;
+  const fontSize = 9;
+  const lineHeight = 4;
+  const cellMinHeight = 8;
+  const accentRgb = hexToRgb(accentHex);
+
+  // Compute row heights
+  const rowHeights = rows.map((row, ri) => {
+    let maxLines = 1;
+    doc.setFont(font, ri === 0 && table.hasHeader ? 'bold' : 'normal');
+    doc.setFontSize(fontSize);
+    row.forEach(cell => {
+      const lines = doc.splitTextToSize(String(cell || ''), colWidth - padding * 2);
+      maxLines = Math.max(maxLines, lines.length);
+    });
+    return Math.max(cellMinHeight, maxLines * lineHeight + padding * 2);
+  });
+
+  let currentY = y;
+  for (let ri = 0; ri < rows.length; ri++) {
+    const rowH = rowHeights[ri];
+    // Page break if needed
+    if (currentY + rowH > bottomLimit) {
+      doc.addPage();
+      currentY = 18;
+    }
+
+    const isHeader = ri === 0 && table.hasHeader;
+
+    // Header background
+    if (isHeader) {
+      doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b);
+      doc.rect(x, currentY, maxWidth, rowH, 'F');
+    } else if (ri % 2 === 0) {
+      doc.setFillColor(245, 245, 240);
+      doc.rect(x, currentY, maxWidth, rowH, 'F');
+    }
+
+    // Cell borders and text
+    for (let ci = 0; ci < cols; ci++) {
+      const cellX = x + ci * colWidth;
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      doc.rect(cellX, currentY, colWidth, rowH);
+      doc.setFont(font, isHeader ? 'bold' : 'normal');
+      doc.setFontSize(fontSize);
+      if (isHeader) doc.setTextColor(255, 255, 255);
+      else doc.setTextColor(40, 40, 40);
+      const text = String(rows[ri][ci] || '');
+      const lines = doc.splitTextToSize(text, colWidth - padding * 2);
+      let textY = currentY + padding + fontSize * 0.35;
+      lines.forEach(line => {
+        doc.text(line, cellX + padding, textY);
+        textY += lineHeight;
+      });
+    }
+    currentY += rowH;
+  }
+  return currentY + 5;
+}
+
 $('btnExportPDF').onclick = exportRealPDF;
 
 // ══════════════════════════════════════════════════════════════════
@@ -1264,7 +1720,8 @@ async function importEPUB(file) {
       title: ch.title,
       content: ch.content,
       imagePosition: 'top',
-      images: ch.images
+      images: ch.images,
+      tables: {}
     }));
     state.currentChapter = 0;
     state.view = 'cover';
@@ -1312,7 +1769,8 @@ $('btnSaveJSON').onclick = async () => {
       }
       exportObj.chapters.push({
         id: c.id, title: c.title, content: c.content,
-        imagePosition: c.imagePosition, images
+        imagePosition: c.imagePosition, images,
+        tables: c.tables || {}
       });
     }
     const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
@@ -1368,10 +1826,11 @@ $('fileLoadJSON').addEventListener('change', e => {
           title: c.title || '',
           content: c.content || '',
           imagePosition: c.imagePosition || 'top',
-          images
+          images,
+          tables: c.tables || {}
         });
       }
-      if (!state.chapters.length) state.chapters = [{ id: Date.now(), title: 'Introduction', content: '', images: [], imagePosition: 'top' }];
+      if (!state.chapters.length) state.chapters = [{ id: Date.now(), title: 'Introduction', content: '', images: [], imagePosition: 'top', tables: {} }];
       state.currentChapter = 0;
       state.view = 'cover';
 
@@ -1387,32 +1846,20 @@ $('fileLoadJSON').addEventListener('change', e => {
 });
 
 // ══════════════════════════════════════════════════════════════════
-// 🗑️ NOUVEAU LIVRE — Version corrigée et robuste
+// NOUVEAU LIVRE
 // ══════════════════════════════════════════════════════════════════
 $('btnNewBook').onclick = async () => {
-  if (!confirm('Effacer TOUT le livre actuel et repartir de zéro ?\n\nCette action est définitive. Ton livre sera remplacé par un nouveau vide.')) return;
-
+  if (!confirm('Effacer TOUT le livre actuel et repartir de zéro ?\n\nCette action est définitive.')) return;
   setStatus('🗑️ Effacement en cours…', 'warn');
-
-  // 1. Révoquer toutes les URLs mémoire
   try { revokeAllTrackedURLs(); } catch (e) {}
-
-  // 2. Vider le contenu d'IndexedDB
-  try { await idbClear(); } catch (e) { console.warn('idbClear error', e); }
-
-  // 3. Vider localStorage
+  try { await idbClear(); } catch (e) { console.warn(e); }
   try {
     localStorage.removeItem('ebookforge_state');
     localStorage.removeItem('ebookforge_theme');
   } catch (e) {}
-
-  // 4. Supprimer complètement la base de données (plus radical)
   try {
     if (dbPromise) {
-      try {
-        const db = await dbPromise;
-        db.close();
-      } catch (e) {}
+      try { const db = await dbPromise; db.close(); } catch (e) {}
       dbPromise = null;
     }
     await new Promise((resolve) => {
@@ -1422,14 +1869,9 @@ $('btnNewBook').onclick = async () => {
       req.onblocked = () => resolve();
       setTimeout(resolve, 2000);
     });
-  } catch (e) { console.warn('deleteDB error', e); }
-
+  } catch (e) { console.warn(e); }
   setStatus('✅ Effacement terminé, redémarrage…', 'ok');
-
-  // 5. Attendre un peu pour que tout se termine avant reload
   await new Promise(r => setTimeout(r, 800));
-
-  // 6. Redémarrer
   location.reload();
 };
 
