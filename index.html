@@ -20,7 +20,7 @@ header .tag{font-size:12px;color:var(--muted);margin-left:auto}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:0 0 12px 0;font-weight:700}
 label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px;font-weight:600}
 input[type=text],input[type=number],select,textarea{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;resize:vertical}
-input[type=text]:focus,select:focus,textarea:focus,input[type=number]:focus{border-color:var(--accent)}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--accent)}
 textarea{min-height:180px;line-height:1.6;font-size:13px}
 input[type=range]{width:100%;margin:6px 0}
 input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);cursor:pointer;padding:3px}
@@ -31,6 +31,13 @@ input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-r
 .btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
 .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;padding:14px;font-size:15px;width:100%;cursor:pointer;color:#fff;font-weight:800;border-radius:10px}
 .btn-ok{background:var(--ok);color:#000;border:none;font-weight:800}
+.fmt-toolbar{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0;padding:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px}
+.fmt-btn{cursor:pointer;background:#232333;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:800;min-width:38px;transition:.15s}
+.fmt-btn:hover{border-color:var(--accent);color:var(--accent)}
+.fmt-btn.b{font-weight:900}
+.fmt-btn.i{font-style:italic;font-family:'Playfair Display',serif}
+.fmt-btn.u{text-decoration:underline}
+.fmt-btn.s{text-decoration:line-through}
 .templates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tpl{cursor:pointer;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;transition:.15s}
 .tpl:hover{border-color:var(--accent)}
@@ -84,10 +91,17 @@ input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-r
 .img-float-right{float:right;max-width:42%;margin:4px 0 10px 14px;border-radius:4px}
 .img-center{display:block;margin:12px auto;max-width:85%;border-radius:4px}
 .clearfix::after{content:'';display:block;clear:both}
+.ebook-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:0.95em}
+.ebook-table th,.ebook-table td{border:1px solid #BBB;padding:6px 8px;text-align:left}
+.ebook-table th{background:#F0F0F0;font-weight:700;color:#222}
+.ebook-table td{color:#333}
 .status{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;min-height:16px}
 .status.ok{color:var(--ok)}
 .word-count{font-size:11px;color:var(--muted);text-align:right;margin-top:6px}
 .info-box{background:#0E1620;border:1px solid #1F3050;border-radius:10px;padding:10px;font-size:12px;color:#A8C8F0;margin-bottom:12px;line-height:1.5}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-box h3{margin:0 0 12px 0;font-size:16px;color:var(--text)}
 #printContainer{display:none}
 @media print{
   body>*:not(#printContainer){display:none!important}
@@ -116,7 +130,7 @@ input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-r
 <div class="layout">
   <div class="controls">
     <div class="info-box">
-      💡 <b>Astuce :</b> ton livre est <b>sauvegardé automatiquement</b>. Tu peux fermer et revenir plus tard.
+      💡 <b>Astuce :</b> ton livre est <b>sauvegardé automatiquement</b>. Sélectionne du texte puis clique sur <b>G</b>, <b>I</b>, <b>U</b>… pour le mettre en forme.
     </div>
 
     <div class="panel">
@@ -187,6 +201,18 @@ input[type=color]{width:100%;height:42px;border:1px solid var(--border);border-r
       <label>Sous-titre (optionnel)</label>
       <input type="text" id="chapterSubtitle" placeholder="Ex : Recettes naturelles" />
       <label>Texte</label>
+
+      <div class="fmt-toolbar">
+        <button class="fmt-btn b" data-fmt="bold" title="Gras">G</button>
+        <button class="fmt-btn i" data-fmt="italic" title="Italique">I</button>
+        <button class="fmt-btn u" data-fmt="underline" title="Souligné">S</button>
+        <button class="fmt-btn s" data-fmt="strike" title="Barré">B</button>
+        <button class="fmt-btn" data-fmt="upper" title="MAJUSCULES">AA</button>
+        <button class="fmt-btn" data-fmt="lower" title="minuscules">aa</button>
+        <button class="fmt-btn" data-fmt="title" title="Première Lettre">Aa</button>
+        <button class="fmt-btn" data-fmt="clear" title="Effacer la mise en forme" style="min-width:auto;padding:6px 8px">✕</button>
+      </div>
+
       <textarea id="chapterContent" placeholder="Écris ton texte ici...
 
 Utilise :
@@ -194,8 +220,11 @@ Utilise :
 ## Sous-section
 **gras** et *italique*
 
-Ligne vide = nouveau paragraphe"></textarea>
-      <label>Images illustratives</label>
+Sélectionne un mot puis clique sur G, I, U, etc."></textarea>
+
+      <button class="btn" id="btnInsertTable" style="width:100%;margin-top:8px">📊 Insérer un tableau</button>
+
+      <label style="margin-top:12px">Images illustratives</label>
       <label class="file-drop" for="chapterImages">🖼️ Ajouter des images
         <input type="file" id="chapterImages" accept="image/*" multiple />
       </label>
@@ -238,430 +267,22 @@ Ligne vide = nouveau paragraphe"></textarea>
   </div>
 </div>
 
+<div id="tableModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>📊 Insérer un tableau</h3>
+    <div class="hint">Colle depuis Excel / Google Sheets (colonnes détectées automatiquement) ou tape tes données.</div>
+    <textarea id="tableInput" rows="5" placeholder="Colle ici (Ctrl+V) ou tape...&#10;Utilise TAB ou | entre les colonnes"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="btnTableAddRow">+ Ligne</button>
+      <button class="btn" id="btnTableAddCol">+ Colonne</button>
+    </div>
+    <div class="hint" style="margin-top:12px">Aperçu :</div>
+    <div id="tablePreview" style="margin-top:6px;overflow:auto;max-height:200px"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="btnTableCancel">Annuler</button>
+      <button class="btn-primary" id="btnTableInsert" style="flex:1">Insérer</button>
+    </div>
+  </div>
+</div>
+
 <div id="printContainer"></div>
-<script>
-const TEMPLATES = {
-  classic: { name: 'Classique', desc: 'Playfair + Lora, élégant' },
-  modern: { name: 'Moderne', desc: 'Inter, aéré et net' },
-  romance: { name: 'Roman', desc: 'Crimson, traditionnel' },
-  minimal: { name: 'Minimaliste', desc: 'Inter, épuré' }
-};
-
-const state = {
-  meta: {
-    title: 'Mon premier ebook',
-    subtitle: 'Un guide pratique',
-    author: 'Auteur',
-    coverColor1: '#FF3366',
-    coverColor2: '#7C4DFF',
-    coverImage: null
-  },
-  design: {
-    template: 'classic',
-    accent: '#FF3366',
-    fontSelect: 'classic',
-    fontSize: 12,
-    lineHeight: 1.65,
-    headerText: '',
-    footerText: '',
-    showPageNum: true
-  },
-  chapters: [
-    { id: Date.now(), title: 'Introduction', subtitle: '', content: 'Bienvenue dans ce livre.', images: [], imagePosition: 'center' }
-  ],
-  view: 'cover',
-  currentChapter: 0
-};
-
-const $ = id => document.getElementById(id);
-
-function saveLocal() {
-  try {
-    localStorage.setItem('ebookforge_state', JSON.stringify(state));
-    setStatus('💾 Sauvegardé', 'ok');
-  } catch (e) { setStatus('⚠️ Stockage plein', ''); }
-}
-function loadLocal() {
-  try {
-    const s = localStorage.getItem('ebookforge_state');
-    if (s) Object.assign(state, JSON.parse(s));
-  } catch (e) { console.warn(e); }
-}
-let saveTimer;
-function saveDelayed() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveLocal, 800);
-}
-function setStatus(msg, cls) {
-  const el = $('status');
-  if (el) { el.textContent = msg; el.className = 'status ' + (cls || ''); }
-}
-
-function escapeHTML(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function formatText(text) {
-  if (!text) return '';
-  return text.split(/\n\n+/).map(p => {
-    p = p.trim();
-    if (!p) return '';
-    if (p.startsWith('## ')) return '<h3>' + escapeHTML(p.slice(3)) + '</h3>';
-    if (p.startsWith('# ')) return '<h3 style="font-size:18px">' + escapeHTML(p.slice(2)) + '</h3>';
-    let h = escapeHTML(p);
-    h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    return '<p>' + h + '</p>';
-  }).join('');
-}
-
-function getFonts() {
-  const map = {
-    classic: { h: "'Playfair Display', serif", b: "'Lora', serif" },
-    modern: { h: "'Inter', sans-serif", b: "'Inter', sans-serif" },
-    romance: { h: "'Playfair Display', serif", b: "'Crimson Text', serif" },
-    merriweather: { h: "'Merriweather', serif", b: "'Merriweather', serif" },
-    mixed: { h: "'Playfair Display', serif", b: "'Inter', sans-serif" }
-  };
-  return map[state.design.fontSelect || 'classic'] || map.classic;
-}
-
-function applyFont() {
-  const f = getFonts();
-  document.querySelectorAll('.page-chapter h2, .page-chapter h3, .page-subtitle').forEach(el => { el.style.fontFamily = f.h; });
-  document.querySelectorAll('.page-chapter p').forEach(el => { el.style.fontFamily = f.b; });
-}
-
-function buildHeaderFooter(pageNum) {
-  let html = '';
-  if (state.design.headerText) html += '<div class="page-header">' + escapeHTML(state.design.headerText) + '</div>';
-  if (state.design.footerText) html += '<div class="page-footer">' + escapeHTML(state.design.footerText) + '</div>';
-  if (state.design.showPageNum) html += '<div class="page-num">' + pageNum + '</div>';
-  return html;
-}
-
-function buildCoverHTML() {
-  const m = state.meta;
-  const bg = m.coverImage
-    ? "background-image:url('" + m.coverImage + "')"
-    : 'background:linear-gradient(135deg,' + m.coverColor1 + ',' + m.coverColor2 + ')';
-  return '<div class="page" style="padding:0"><div class="page-cover" style="' + bg + '"><div class="content"><div class="top">Ebook</div><div class="mid"><h1>' + escapeHTML(m.title || 'Sans titre') + '</h1>' + (m.subtitle ? '<div class="sub">' + escapeHTML(m.subtitle) + '</div>' : '') + '</div><div class="author">' + escapeHTML(m.author || '') + '</div></div></div></div>';
-}
-
-function buildTOCHTML() {
-  const list = state.chapters.map(c => '<li><span style="flex:1">' + escapeHTML(c.title || 'Sans titre') + '</span></li>').join('');
-  return '<div class="page tpl-' + state.design.template + '" style="--accent:' + state.design.accent + '"><div class="page-inner"><div class="page-toc" style="counter-reset:toc"><h1>Sommaire</h1><ol>' + list + '</ol></div></div></div>';
-}
-
-function buildImagesHTML(images, position) {
-  if (!images || images.length === 0) return '';
-  if (position === 'left') {
-    return '<div class="clearfix">' + images.map(im => '<img src="' + im.src + '" class="img-float-left"/>').join('') + '</div>';
-  }
-  if (position === 'right') {
-    return '<div class="clearfix">' + images.map(im => '<img src="' + im.src + '" class="img-float-right"/>').join('') + '</div>';
-  }
-  if (position === 'top') {
-    return '<div class="img-top">' + images.map(im => '<img src="' + im.src + '" class="img-center" style="max-height:200px"/>').join('') + '</div>';
-  }
-  if (position === 'bottom') {
-    return '<div class="img-bottom">' + images.map(im => '<img src="' + im.src + '" class="img-center" style="max-height:200px"/>').join('') + '</div>';
-  }
-  return images.map(im => '<img src="' + im.src + '" class="img-center"/>').join('');
-}
-
-function buildChapterHTML(idx, pageNum) {
-  const ch = state.chapters[idx];
-  if (!ch) return '';
-  const imgHTML = buildImagesHTML(ch.images, ch.imagePosition || 'center');
-  const pos = ch.imagePosition || 'center';
-  const subtitleHTML = ch.subtitle ? '<div class="page-subtitle">' + escapeHTML(ch.subtitle) + '</div>' : '';
-  let inner = '<h2>' + escapeHTML(ch.title || 'Sans titre') + '</h2>' + subtitleHTML;
-  if (pos === 'top') inner += imgHTML;
-  inner += '<div class="chapter-text clearfix">' + formatText(ch.content) + '</div>';
-  if (pos === 'bottom') inner += imgHTML;
-  return '<div class="page tpl-' + state.design.template + '" style="--accent:' + state.design.accent + '"><div class="page-inner">' + buildHeaderFooter(pageNum || 1) + '<div class="page-chapter">' + inner + '</div></div></div>';
-}
-
-function buildCurrentPreview() {
-  let html = '';
-  if (state.view === 'cover') html = buildCoverHTML();
-  else if (state.view === 'toc') html = buildTOCHTML();
-  else html = buildChapterHTML(state.currentChapter, state.currentChapter + 3);
-  $('previewPage').innerHTML = html;
-  const page = $('previewPage').querySelector('.page-chapter');
-  if (page) {
-    page.querySelectorAll('p').forEach(p => {
-      p.style.fontSize = state.design.fontSize + 'px';
-      p.style.lineHeight = state.design.lineHeight;
-    });
-    page.querySelectorAll('h3').forEach(h => { h.style.fontSize = (state.design.fontSize + 2) + 'px'; });
-    page.querySelectorAll('h2').forEach(h => { h.style.fontSize = (state.design.fontSize + 10) + 'px'; });
-  }
-  applyFont();
-  const total = 2 + state.chapters.length;
-  const cur = state.view === 'cover' ? 1 : (state.view === 'toc' ? 2 : 3 + state.currentChapter);
-  $('previewStatus').textContent = 'Page ' + cur + ' / ' + total;
-  document.querySelectorAll('[data-view]').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === state.view);
-  });
-}
-
-function renderTemplates() {
-  const el = $('templates');
-  el.innerHTML = '';
-  Object.entries(TEMPLATES).forEach(([k, t]) => {
-    const d = document.createElement('div');
-    d.className = 'tpl' + (k === state.design.template ? ' active' : '');
-    d.innerHTML = '<div class="t">' + t.name + '</div><div class="d">' + t.desc + '</div>';
-    d.onclick = () => { state.design.template = k; renderTemplates(); buildCurrentPreview(); saveDelayed(); };
-    el.appendChild(d);
-  });
-}
-
-function renderChapters() {
-  const el = $('chaptersList');
-  el.innerHTML = '';
-  state.chapters.forEach((c, i) => {
-    const d = document.createElement('div');
-    d.className = 'chapter-item' + (i === state.currentChapter ? ' active' : '');
-    d.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="name">' + escapeHTML(c.title || 'Sans titre') + '</span><button class="del" data-i="' + i + '">✕</button>';
-    d.onclick = (e) => {
-      if (e.target.classList.contains('del')) {
-        if (state.chapters.length <= 1) { alert('Garde au moins un chapitre.'); return; }
-        if (!confirm('Supprimer ce chapitre ?')) return;
-        state.chapters.splice(+e.target.dataset.i, 1);
-        if (state.currentChapter >= state.chapters.length) state.currentChapter = state.chapters.length - 1;
-        renderChapters(); loadChapterIntoEditor(); buildCurrentPreview(); saveDelayed();
-        return;
-      }
-      state.currentChapter = i; state.view = 'chapter';
-      renderChapters(); loadChapterIntoEditor(); buildCurrentPreview();
-    };
-    el.appendChild(d);
-  });
-}
-
-function renderChapterImages() {
-  const el = $('chapterImagesGrid');
-  const ch = state.chapters[state.currentChapter];
-  el.innerHTML = '';
-  if (!ch) return;
-  (ch.images || []).forEach((im, i) => {
-    const d = document.createElement('div');
-    d.className = 'img-thumb';
-    d.innerHTML = '<img src="' + im.src + '"/><button class="x" data-i="' + i + '">✕</button>';
-    el.appendChild(d);
-  });
-  el.querySelectorAll('.x').forEach(b => {
-    b.onclick = () => { ch.images.splice(+b.dataset.i, 1); renderChapterImages(); buildCurrentPreview(); saveDelayed(); };
-  });
-}
-
-function renderImagePosition() {
-  const el = $('imgPosition');
-  const ch = state.chapters[state.currentChapter];
-  el.innerHTML = '';
-  [['top', '↑ Haut'], ['center', '◯ Milieu'], ['bottom', '↓ Bas'], ['left', '← Gauche'], ['right', '→ Droite']].forEach(([k, lb]) => {
-    const b = document.createElement('button');
-    b.className = 'btn' + ((ch.imagePosition || 'center') === k ? ' active' : '');
-    b.textContent = lb;
-    b.onclick = () => { ch.imagePosition = k; renderImagePosition(); buildCurrentPreview(); saveDelayed(); };
-    el.appendChild(b);
-  });
-}
-
-function updateWordCount() {
-  const ch = state.chapters[state.currentChapter];
-  if (!ch) return;
-  const words = (ch.content || '').trim().split(/\s+/).filter(w => w).length;
-  $('wordCount').textContent = words + ' mots · ' + (ch.content || '').length + ' caractères';
-}
-
-function loadChapterIntoEditor() {
-  const ch = state.chapters[state.currentChapter];
-  if (!ch) return;
-  $('chapterTitle').value = ch.title || '';
-  $('chapterSubtitle').value = ch.subtitle || '';
-  $('chapterContent').value = ch.content || '';
-  renderChapterImages(); renderImagePosition(); updateWordCount();
-}
-
-function loadMetaIntoUI() {
-  $('metaTitle').value = state.meta.title || '';
-  $('metaSubtitle').value = state.meta.subtitle || '';
-  $('metaAuthor').value = state.meta.author || '';
-  $('coverColor1').value = state.meta.coverColor1;
-  $('coverColor2').value = state.meta.coverColor2;
-  $('accentColor').value = state.design.accent;
-  $('fontSelect').value = state.design.fontSelect || 'classic';
-  $('fontSize').value = state.design.fontSize;
-  $('fontSizeLabel').textContent = state.design.fontSize + 'pt';
-  $('lineHeight').value = Math.round(state.design.lineHeight * 100);
-  $('lineHeightLabel').textContent = state.design.lineHeight.toFixed(2);
-  $('headerText').value = state.design.headerText || '';
-  $('footerText').value = state.design.footerText || '';
-  $('showPageNum').checked = state.design.showPageNum !== false;
-}
-
-function fileToResizedDataURL(file, maxW) {
-  maxW = maxW || 1200;
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > maxW) { h = h * maxW / w; w = maxW; }
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(c.toDataURL('image/jpeg', 0.85));
-      };
-      img.onerror = reject;
-      img.src = reader.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function hslToHex(h, s, l) {
-  s /= 100; l /= 100;
-  const k = n => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const toHex = x => Math.round(255 * x).toString(16).padStart(2, '0');
-  return '#' + toHex(f(0)) + toHex(f(8)) + toHex(f(4));
-}
-
-$('metaTitle').addEventListener('input', e => { state.meta.title = e.target.value; buildCurrentPreview(); saveDelayed(); });
-$('metaSubtitle').addEventListener('input', e => { state.meta.subtitle = e.target.value; buildCurrentPreview(); saveDelayed(); });
-$('metaAuthor').addEventListener('input', e => { state.meta.author = e.target.value; buildCurrentPreview(); saveDelayed(); });
-['coverColor1', 'coverColor2'].forEach(id => {
-  $(id).addEventListener('input', e => { state.meta[id] = e.target.value; buildCurrentPreview(); saveDelayed(); });
-});
-$('accentColor').addEventListener('input', e => { state.design.accent = e.target.value; buildCurrentPreview(); saveDelayed(); });
-$('fontSelect').addEventListener('change', e => { state.design.fontSelect = e.target.value; applyFont(); saveDelayed(); });
-$('fontSize').addEventListener('input', e => { state.design.fontSize = parseInt(e.target.value); $('fontSizeLabel').textContent = state.design.fontSize + 'pt'; buildCurrentPreview(); saveDelayed(); });
-$('lineHeight').addEventListener('input', e => { state.design.lineHeight = parseInt(e.target.value) / 100; $('lineHeightLabel').textContent = state.design.lineHeight.toFixed(2); buildCurrentPreview(); saveDelayed(); });
-$('headerText').addEventListener('input', e => { state.design.headerText = e.target.value; buildCurrentPreview(); saveDelayed(); });
-$('footerText').addEventListener('input', e => { state.design.footerText = e.target.value; buildCurrentPreview(); saveDelayed(); });
-$('showPageNum').addEventListener('change', e => { state.design.showPageNum = e.target.checked; buildCurrentPreview(); saveDelayed(); });
-
-$('coverImage').addEventListener('change', async e => {
-  const f = e.target.files[0]; if (!f) return;
-  try { state.meta.coverImage = await fileToResizedDataURL(f, 1000); buildCurrentPreview(); saveDelayed(); }
-  catch (err) { alert('Erreur image'); }
-});
-$('btnCoverClear').onclick = () => { state.meta.coverImage = null; buildCurrentPreview(); saveDelayed(); };
-$('btnCoverRandom').onclick = () => {
-  const h = Math.floor(Math.random() * 360);
-  const c1 = hslToHex(h, 75, 55);
-  const c2 = hslToHex((h + 40) % 360, 75, 45);
-  state.meta.coverColor1 = c1; state.meta.coverColor2 = c2;
-  $('coverColor1').value = c1; $('coverColor2').value = c2;
-  buildCurrentPreview(); saveDelayed();
-};
-
-$('chapterTitle').addEventListener('input', e => {
-  const ch = state.chapters[state.currentChapter]; if (!ch) return;
-  ch.title = e.target.value; renderChapters(); buildCurrentPreview(); saveDelayed();
-});
-$('chapterSubtitle').addEventListener('input', e => {
-  const ch = state.chapters[state.currentChapter]; if (!ch) return;
-  ch.subtitle = e.target.value; buildCurrentPreview(); saveDelayed();
-});
-$('chapterContent').addEventListener('input', e => {
-  const ch = state.chapters[state.currentChapter]; if (!ch) return;
-  ch.content = e.target.value; updateWordCount(); buildCurrentPreview(); saveDelayed();
-});
-$('chapterImages').addEventListener('change', async e => {
-  const files = Array.from(e.target.files);
-  const ch = state.chapters[state.currentChapter]; if (!ch) return;
-  for (const f of files) {
-    try { const src = await fileToResizedDataURL(f, 1000); ch.images.push({ src: src }); }
-    catch (err) { console.warn(err); }
-  }
-  renderChapterImages(); buildCurrentPreview(); saveDelayed();
-});
-
-$('btnAddChapter').onclick = () => {
-  state.chapters.push({ id: Date.now(), title: 'Nouveau chapitre', subtitle: '', content: '', images: [], imagePosition: 'center' });
-  state.currentChapter = state.chapters.length - 1;
-  state.view = 'chapter';
-  renderChapters(); loadChapterIntoEditor(); buildCurrentPreview(); saveDelayed();
-};
-
-document.querySelectorAll('[data-view]').forEach(b => {
-  b.onclick = () => { state.view = b.dataset.view; buildCurrentPreview(); };
-});
-$('btnPrev').onclick = () => {
-  if (state.view === 'cover') return;
-  if (state.view === 'toc') { state.view = 'cover'; buildCurrentPreview(); return; }
-  if (state.currentChapter > 0) { state.currentChapter--; loadChapterIntoEditor(); renderChapters(); }
-  else { state.view = 'toc'; }
-  buildCurrentPreview();
-};
-$('btnNext').onclick = () => {
-  if (state.view === 'cover') { state.view = 'toc'; buildCurrentPreview(); return; }
-  if (state.view === 'toc') { state.view = 'chapter'; state.currentChapter = 0; loadChapterIntoEditor(); renderChapters(); }
-  else if (state.currentChapter < state.chapters.length - 1) { state.currentChapter++; loadChapterIntoEditor(); renderChapters(); }
-  buildCurrentPreview();
-};
-
-$('btnExportPDF').onclick = () => {
-  setStatus('📕 Préparation du PDF…', 'ok');
-  const all = [buildCoverHTML(), buildTOCHTML()];
-  state.chapters.forEach((c, i) => all.push(buildChapterHTML(i, i + 3)));
-  const html = all.map(p => '<div class="print-page">' + p + '</div>').join('');
-  $('printContainer').innerHTML = html;
-  $('printContainer').querySelectorAll('.page-chapter p').forEach(p => {
-    p.style.fontSize = state.design.fontSize + 'pt';
-    p.style.lineHeight = state.design.lineHeight;
-  });
-  $('printContainer').querySelectorAll('.page-chapter h3').forEach(h => { h.style.fontSize = (state.design.fontSize + 2) + 'pt'; });
-  $('printContainer').querySelectorAll('.page-chapter h2').forEach(h => { h.style.fontSize = (state.design.fontSize + 10) + 'pt'; });
-  applyFont();
-  setTimeout(() => { window.print(); setStatus('✅ PDF prêt', 'ok'); }, 300);
-};
-
-$('btnSaveJSON').onclick = () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'ebook-' + Date.now() + '.json'; a.click();
-  URL.revokeObjectURL(url);
-  setStatus('💾 Fichier téléchargé', 'ok');
-};
-$('btnLoadJSON').onclick = () => $('fileLoadJSON').click();
-$('fileLoadJSON').addEventListener('change', e => {
-  const f = e.target.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    try {
-      Object.assign(state, JSON.parse(r.result));
-      loadMetaIntoUI(); renderTemplates(); renderChapters(); loadChapterIntoEditor(); buildCurrentPreview(); saveDelayed();
-      setStatus('✅ Livre chargé', 'ok');
-    } catch (err) { alert('Fichier invalide'); }
-  };
-  r.readAsText(f);
-});
-$('btnNewBook').onclick = () => {
-  if (!confirm('Effacer TOUT le livre actuel et repartir de zéro ?')) return;
-  localStorage.clear(); sessionStorage.clear(); location.reload(true);
-};
-
-loadLocal();
-loadMetaIntoUI();
-renderTemplates();
-renderChapters();
-loadChapterIntoEditor();
-buildCurrentPreview();
-window.addEventListener('beforeunload', saveLocal);
-setStatus('Prêt. Écris ton livre !', 'ok');
-</script>
-</body>
-</html>
-  
-  
