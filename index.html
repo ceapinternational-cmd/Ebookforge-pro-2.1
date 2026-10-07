@@ -286,3 +286,137 @@ Sélectionne un mot puis clique sur G, I, U, etc."></textarea>
 </div>
 
 <div id="printContainer"></div>
+  <script>
+const TEMPLATES = {
+  classic: { name: 'Classique', desc: 'Playfair + Lora, élégant' },
+  modern: { name: 'Moderne', desc: 'Inter, aéré et net' },
+  romance: { name: 'Roman', desc: 'Crimson, traditionnel' },
+  minimal: { name: 'Minimaliste', desc: 'Inter, épuré' }
+};
+
+const state = {
+  meta: { title: 'Mon premier ebook', subtitle: 'Un guide pratique', author: 'Auteur', coverColor1: '#FF3366', coverColor2: '#7C4DFF', coverImage: null },
+  design: { template: 'classic', accent: '#FF3366', fontSelect: 'classic', fontSize: 12, lineHeight: 1.65, headerText: '', footerText: '', showPageNum: true },
+  chapters: [{ id: Date.now(), title: 'Introduction', subtitle: '', content: 'Bienvenue dans ce livre.', images: [], imagePosition: 'center' }],
+  view: 'cover',
+  currentChapter: 0
+};
+
+const $ = id => document.getElementById(id);
+
+function saveLocal() { try { localStorage.setItem('ebookforge_state', JSON.stringify(state)); setStatus('💾 Sauvegardé', 'ok'); } catch (e) { setStatus('⚠️ Stockage plein', ''); } }
+function loadLocal() { try { const s = localStorage.getItem('ebookforge_state'); if (s) Object.assign(state, JSON.parse(s)); } catch (e) { console.warn(e); } }
+let saveTimer;
+function saveDelayed() { clearTimeout(saveTimer); saveTimer = setTimeout(saveLocal, 800); }
+function setStatus(msg, cls) { const el = $('status'); if (el) { el.textContent = msg; el.className = 'status ' + (cls || ''); } }
+
+function escapeHTML(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderTable(block) {
+  const lines = block.split('\n').filter(l => l.trim().startsWith('|'));
+  if (lines.length < 1) return null;
+  const rows = lines.map(l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+  let headerRow = null, bodyRows = rows;
+  if (rows.length >= 2 && rows[1].every(c => /^[-: ]+$/.test(c))) { headerRow = rows[0]; bodyRows = rows.slice(2); }
+  let html = '<table class="ebook-table"><tbody>';
+  if (headerRow) html += '<tr>' + headerRow.map(c => '<th>' + escapeHTML(c) + '</th>').join('') + '</tr>';
+  bodyRows.forEach(r => { html += '<tr>' + r.map(c => '<td>' + escapeHTML(c) + '</td>').join('') + '</tr>'; });
+  html += '</tbody></table>';
+  return html;
+}
+
+function formatText(text) {
+  if (!text) return '';
+  return text.split(/\n\n+/).map(p => {
+    p = p.trim();
+    if (!p) return '';
+    if (p.split('\n').some(l => l.trim().startsWith('|'))) { const t = renderTable(p); if (t) return t; }
+    if (p.startsWith('## ')) return '<h3>' + escapeHTML(p.slice(3)) + '</h3>';
+    if (p.startsWith('# ')) return '<h3 style="font-size:18px">' + escapeHTML(p.slice(2)) + '</h3>';
+    let h = escapeHTML(p);
+    h = h.replace(/\[\*\*(.+?)\*\*\]/g, '<strong>$1</strong>');
+    h = h.replace(/\[\*(.+?)\*\]/g, '<em>$1</em>');
+    h = h.replace(/\[__(.+?)__\]/g, '<u>$1</u>');
+    h = h.replace(/\[~~(.+?)~~\]/g, '<s>$1</s>');
+    h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    return '<p>' + h + '</p>';
+  }).join('');
+}
+
+function getFonts() {
+  const map = {
+    classic: { h: "'Playfair Display', serif", b: "'Lora', serif" },
+    modern: { h: "'Inter', sans-serif", b: "'Inter', sans-serif" },
+    romance: { h: "'Playfair Display', serif", b: "'Crimson Text', serif" },
+    merriweather: { h: "'Merriweather', serif", b: "'Merriweather', serif" },
+    mixed: { h: "'Playfair Display', serif", b: "'Inter', sans-serif" }
+  };
+  return map[state.design.fontSelect || 'classic'] || map.classic;
+}
+
+function applyFont() {
+  const f = getFonts();
+  document.querySelectorAll('.page-chapter h2, .page-chapter h3, .page-subtitle').forEach(el => { el.style.fontFamily = f.h; });
+  document.querySelectorAll('.page-chapter p, .page-chapter td, .page-chapter th').forEach(el => { el.style.fontFamily = f.b; });
+}
+
+function buildHeaderFooter(pageNum) {
+  let html = '';
+  if (state.design.headerText) html += '<div class="page-header">' + escapeHTML(state.design.headerText) + '</div>';
+  if (state.design.footerText) html += '<div class="page-footer">' + escapeHTML(state.design.footerText) + '</div>';
+  if (state.design.showPageNum) html += '<div class="page-num">' + pageNum + '</div>';
+  return html;
+}
+
+function buildCoverHTML() {
+  const m = state.meta;
+  const bg = m.coverImage ? "background-image:url('" + m.coverImage + "')" : 'background:linear-gradient(135deg,' + m.coverColor1 + ',' + m.coverColor2 + ')';
+  return '<div class="page" style="padding:0"><div class="page-cover" style="' + bg + '"><div class="content"><div class="top">Ebook</div><div class="mid"><h1>' + escapeHTML(m.title || 'Sans titre') + '</h1>' + (m.subtitle ? '<div class="sub">' + escapeHTML(m.subtitle) + '</div>' : '') + '</div><div class="author">' + escapeHTML(m.author || '') + '</div></div></div></div>';
+}
+
+function buildTOCHTML() {
+  const list = state.chapters.map(c => '<li><span style="flex:1">' + escapeHTML(c.title || 'Sans titre') + '</span></li>').join('');
+  return '<div class="page tpl-' + state.design.template + '" style="--accent:' + state.design.accent + '"><div class="page-inner"><div class="page-toc" style="counter-reset:toc"><h1>Sommaire</h1><ol>' + list + '</ol></div></div></div>';
+}
+
+function buildImagesHTML(images, position) {
+  if (!images || images.length === 0) return '';
+  if (position === 'left') return '<div class="clearfix">' + images.map(im => '<img src="' + im.src + '" class="img-float-left"/>').join('') + '</div>';
+  if (position === 'right') return '<div class="clearfix">' + images.map(im => '<img src="' + im.src + '" class="img-float-right"/>').join('') + '</div>';
+  if (position === 'top') return '<div class="img-top">' + images.map(im => '<img src="' + im.src + '" class="img-center" style="max-height:200px"/>').join('') + '</div>';
+  if (position === 'bottom') return '<div class="img-bottom">' + images.map(im => '<img src="' + im.src + '" class="img-center" style="max-height:200px"/>').join('') + '</div>';
+  return images.map(im => '<img src="' + im.src + '" class="img-center"/>').join('');
+}
+
+function buildChapterHTML(idx, pageNum) {
+  const ch = state.chapters[idx];
+  if (!ch) return '';
+  const imgHTML = buildImagesHTML(ch.images, ch.imagePosition || 'center');
+  const pos = ch.imagePosition || 'center';
+  const subtitleHTML = ch.subtitle ? '<div class="page-subtitle">' + escapeHTML(ch.subtitle) + '</div>' : '';
+  let inner = '<h2>' + escapeHTML(ch.title || 'Sans titre') + '</h2>' + subtitleHTML;
+  if (pos === 'top') inner += imgHTML;
+  inner += '<div class="chapter-text clearfix">' + formatText(ch.content) + '</div>';
+  if (pos === 'bottom') inner += imgHTML;
+  return '<div class="page tpl-' + state.design.template + '" style="--accent:' + state.design.accent + '"><div class="page-inner">' + buildHeaderFooter(pageNum || 1) + '<div class="page-chapter">' + inner + '</div></div></div>';
+}
+
+function buildCurrentPreview() {
+  let html = '';
+  if (state.view === 'cover') html = buildCoverHTML();
+  else if (state.view === 'toc') html = buildTOCHTML();
+  else html = buildChapterHTML(state.currentChapter, state.currentChapter + 3);
+  $('previewPage').innerHTML = html;
+  const page = $('previewPage').querySelector('.page-chapter');
+  if (page) {
+    page.querySelectorAll('p').forEach(p => { p.style.fontSize = state.design.fontSize + 'px'; p.style.lineHeight = state.design.lineHeight; });
+    page.querySelectorAll('h3').forEach(h => { h.style.fontSize = (state.design.fontSize + 2) + 'px'; });
+    page.querySelectorAll('h2').forEach(h => { h.style.fontSize = (state.design.fontSize + 10) + 'px'; });
+  }
+  applyFont();
+  const total = 2 + state.chapters.length;
+  const cur = state.view === 'cover' ? 1 : (state.view === 'toc' ? 2 : 3 + state.currentChapter);
+  $('previewStatus').textContent = 'Page ' + cur + ' / ' + total;
+  document.querySelectorAll('[data-view]').forEach(b => { b.classList.toggle('active', b.dataset.view === state.view); });
+}
